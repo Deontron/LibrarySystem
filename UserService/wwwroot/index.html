@@ -1,0 +1,97 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>User Auth & Management</title>
+</head>
+<body>
+    <h1>Giriş Yap</h1>
+    <form id="loginForm">
+        <input type="email" id="loginEmail" placeholder="Email" required />
+        <input type="password" id="loginPassword" placeholder="Şifre" required />
+        <button type="submit">Giriş Yap</button>
+    </form>
+
+    <h1>Kayıt Ol</h1>
+    <form id="registerForm">
+        <input type="text" id="regUsername" placeholder="Kullanıcı Adı" required />
+        <input type="email" id="regEmail" placeholder="Email" required />
+        <input type="password" id="regPassword" placeholder="Şifre" required />
+        <button type="submit">Kayıt Ol</button>
+    </form>
+
+    <h2>Kullanıcı Listesi (Sadece Admin görebilir)</h2>
+    <ul id="userList"></ul>
+
+    <script>
+        const apiUser = "http://localhost:5001/api/user";
+        const apiAuth = "http://localhost:5001/api/auth";
+
+        // Kullanıcıları getir
+        async function getUsers() {
+            try {
+                const res = await fetch(apiUser);
+                if (!res.ok) throw new Error("Yetkisiz veya hata");
+                const users = await res.json();
+                const list = document.getElementById("userList");
+                list.innerHTML = "";
+                users.forEach(u => {
+                    const li = document.createElement("li");
+                    li.textContent = `${u.username} (${u.email})`;
+                    list.appendChild(li);
+                });
+            } catch (err) {
+                console.log("Kullanıcılar alınamadı:", err.message);
+            }
+        }
+
+        // Giriş
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const data = {
+                email: document.getElementById("loginEmail").value,
+                password: document.getElementById("loginPassword").value
+            };
+
+            const res = await fetch(`${apiAuth}/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                const user = await res.json();
+                alert("Giriş başarılı, hoşgeldin: " + user.username);
+                getUsers(); // kullanıcıları getir
+            } else {
+                alert("Giriş başarısız.");
+            }
+        });
+
+        // Kayıt
+        document.getElementById("registerForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const data = {
+                username: document.getElementById("regUsername").value,
+                email: document.getElementById("regEmail").value,
+                password: document.getElementById("regPassword").value
+            };
+
+            const res = await fetch(`${apiAuth}/register`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                alert("Kayıt başarılı. Artık giriş yapabilirsiniz.");
+            } else {
+                alert("Kayıt başarısız.");
+            }
+        });
+
+        // Sayfa yüklendiğinde kullanıcıları getir (zorunlu değil, test için)
+        getUsers();
+    </script>
+</body>
+</html>

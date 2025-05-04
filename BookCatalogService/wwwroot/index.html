@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kitap Kataloğu</title>
+</head>
+<body>
+    <h1>Kitap Listesi</h1>
+    <ul id="bookList"></ul>
+
+    <h2>Yeni Kitap Ekle</h2>
+    <form id="bookForm">
+        <input type="text" id="title" placeholder="Başlık" required />
+        <input type="text" id="author" placeholder="Yazar" required />
+        <input type="text" id="description" placeholder="Açıklama" />
+        <button type="submit">Ekle</button>
+    </form>
+
+    <script>
+        const apiUrl = "http://localhost:5002/api/book";
+
+        async function getBooks() {
+            try {
+                const res = await fetch(apiUrl);
+                if (!res.ok) throw new Error(`API Hatası: ${res.statusText}`);
+                const response = await res.json();
+
+
+                const books = Array.isArray(response) ? response : response.books || []; 
+
+                const list = document.getElementById("bookList");
+                list.innerHTML = "";
+                books.forEach(b => {
+                    const li = document.createElement("li");
+                    li.innerHTML = `
+                        <strong>${b.title}</strong> - ${b.author}<br />
+                        ${b.description}<br />
+                        <button onclick="deleteBook('${b.id}')">Sil</button>
+                    `;
+                    list.appendChild(li);
+                });
+            } catch (error) {
+                alert("Kitapları alırken bir hata oluştu: " + error.message);
+            }
+        }
+
+        async function deleteBook(id) {
+            try {
+                const res = await fetch(`${apiUrl}/${id}`, { method: "DELETE" });
+                if (!res.ok) throw new Error(`Silme hatası: ${res.statusText}`);
+                getBooks();
+            } catch (error) {
+                alert("Kitap silinirken bir hata oluştu: " + error.message);
+            }
+        }
+
+        document.getElementById("bookForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const title = document.getElementById("title").value;
+            const author = document.getElementById("author").value;
+            const description = document.getElementById("description").value;
+
+            if (!title || !author) {
+                alert("Başlık ve Yazar bilgileri zorunludur.");
+                return;
+            }
+
+            try {
+                const res = await fetch(apiUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ title, author, description })
+                });
+
+                if (!res.ok) throw new Error(`Kitap eklenirken hata oluştu: ${res.statusText}`);
+                getBooks();
+            } catch (error) {
+                alert("Kitap eklerken bir hata oluştu: " + error.message);
+            }
+        });
+
+        getBooks();
+    </script>
+
+</body>
+</html>
